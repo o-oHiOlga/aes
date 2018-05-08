@@ -27,6 +27,40 @@ byte * subBytes(byte state[]){
   }
   return result;
 }
+byte * shiftRows(byte state[]){
+  byte result[16];
+  word aux;
+  int i=1,j;
+  for(j=0;j<16;j++)
+    result[j]=state[j];
+
+  for(i=1;i<4;i++){
+    aux=joinWord(result[i],result[i+4],result[i+8],result[i+12]);
+    if(i==1){
+      aux=(aux>>24)|aux<<8;
+      result[i]=(aux>>24)&0xff;
+      result[i+4]=(aux>>16)&0xff;
+      result[i+8]=(aux>>8)&0xff;
+      result[i+12]=aux&0xff;
+    }else if(i==2){
+      aux=(aux>>16)|(aux<<16);
+      result[i]=(aux>>24)&0xff;
+      result[i+4]=(aux>>16)&0xff;
+      result[i+8]=(aux>>8)&0xff;
+      result[i+12]=aux&0xff;
+    }else if(i==3){
+      aux=(aux>>8)|(aux<<24);
+      result[i]=(aux>>24)&0xff;
+      result[i+4]=(aux>>16)&0xff;
+      result[i+8]=(aux>>8)&0xff;
+      result[i+12]=aux&0xff;
+    }
+
+  }
+  //for(j=0;j<16;j++)
+    //printf("%x\n",result[j]);
+  return result;
+}
 
 void keyExpansion(byte key[4*Nk]){
   word temp;
@@ -67,13 +101,14 @@ int main (int argc,char *argv[]){
   byte input[4*Nb]={0x32,0x43,0xf6,0xa8,0x88,0x5a,0x30,0x8d,0x31,0x31,0x98,0xa2,0xe0,0x37,0x07,0x34};
   byte key[16]={0x2b,0x7e,0x15,0x16,0x28,0xae,0xd2,0xa6,0xab,0xf7,0x15,0x88,0x09,0xcf,0x4f,0x3c};
   byte state[16]={0x32,0x43,0xf6,0xa8,0x88,0x5a,0x30,0x8d,0x31,0x31,0x98,0xa2,0xe0,0x37,0x07,0x34};
-  byte *pstate,*pstate1;
+  byte *pstate,*pstate1,*pstate2;
   int i;
 
   keyExpansion(key);
   pstate=addRoundKey(state);
-  pstate1=subBytes(pstate);
 
+  pstate1=subBytes(pstate);
+  pstate2=shiftRows(pstate1);
 
 return 0;
 }
