@@ -57,8 +57,6 @@ byte * shiftRows(byte state[]){
     }
 
   }
-  //for(j=0;j<16;j++)
-    //printf("%x\n",result[j]);
   return result;
 }
 
@@ -82,6 +80,26 @@ void keyExpansion(byte key[4*Nk]){
     i=i+1;
   }
 }
+byte xtime(byte x){
+  byte r;
+  r=((x << 1) ^ (x & 0x80 ? 0x1b : 0))& 0xff;
+  return r;
+}
+byte * mixColumns(byte state[]){
+  byte result[16];
+  int i;
+  for(i=0;i<16;i+=4){
+    result[i]=(xtime(state[i]))^(state[i+1]^xtime(state[i+1]))^state[i+2]^state[i+3];
+    printf("0: %x\n",result[i]);
+    result[i+1]=state[i]^(xtime(state[i+1]))^(state[i+2]^xtime(state[i+2]))^(state[i+3]);
+    printf("1: %x\n",result[i+1]);
+    result[i+2]=state[i]^state[i+1]^(xtime(state[i+2]))^(state[i+3]^xtime(state[i+3]));
+    printf("2: %x\n",result[i+2]);
+    result[i+3]=(state[i]^xtime(state[i]))^state[i+1]^state[i+2]^(xtime(state[i+3]));
+    printf("3: %x\n",result[i+3]);
+  }
+  return result;
+}
 
 byte * addRoundKey(byte state[]){
   byte result[16];
@@ -96,19 +114,21 @@ byte * addRoundKey(byte state[]){
   }
   return result;
 }
-
 int main (int argc,char *argv[]){
   byte input[4*Nb]={0x32,0x43,0xf6,0xa8,0x88,0x5a,0x30,0x8d,0x31,0x31,0x98,0xa2,0xe0,0x37,0x07,0x34};
   byte key[16]={0x2b,0x7e,0x15,0x16,0x28,0xae,0xd2,0xa6,0xab,0xf7,0x15,0x88,0x09,0xcf,0x4f,0x3c};
   byte state[16]={0x32,0x43,0xf6,0xa8,0x88,0x5a,0x30,0x8d,0x31,0x31,0x98,0xa2,0xe0,0x37,0x07,0x34};
-  byte *pstate,*pstate1,*pstate2;
+  byte *pstate,*pstate1,*pstate2,*pstate3;
   int i;
 
   keyExpansion(key);
   pstate=addRoundKey(state);
-
   pstate1=subBytes(pstate);
   pstate2=shiftRows(pstate1);
+  pstate3=mixColumns(pstate2);
 
+  //printf("%x\n",pstate3[4]);
+  //for(i=0;i<16;i++)
+    //printf("p: %x\n",*(pstate3+9));
 return 0;
 }
