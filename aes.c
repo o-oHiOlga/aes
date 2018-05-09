@@ -19,7 +19,7 @@ word subWord(word temp){
 }
 byte * subBytes(byte state[]){
   int r,c,i;
-  byte result[16];
+  byte* result=(byte *)malloc(16*sizeof(byte));
   for(i=0;i<16;i++){
     r=(state[i]&0xf0)>>4;
     c=(state[i]&0x0f);
@@ -28,7 +28,7 @@ byte * subBytes(byte state[]){
   return result;
 }
 byte * shiftRows(byte state[]){
-  byte result[16];
+  byte* result=(byte *)malloc(16*sizeof(byte));
   word aux;
   int i=1,j;
   for(j=0;j<16;j++)
@@ -86,23 +86,20 @@ byte xtime(byte x){
   return r;
 }
 byte * mixColumns(byte state[]){
-  byte result[16];
+  byte* result=(byte *)malloc(16*sizeof(byte)),aux,aux1,aux2,aux3;
   int i;
   for(i=0;i<16;i+=4){
     result[i]=(xtime(state[i]))^(state[i+1]^xtime(state[i+1]))^state[i+2]^state[i+3];
-    printf("0: %x\n",result[i]);
     result[i+1]=state[i]^(xtime(state[i+1]))^(state[i+2]^xtime(state[i+2]))^(state[i+3]);
-    printf("1: %x\n",result[i+1]);
     result[i+2]=state[i]^state[i+1]^(xtime(state[i+2]))^(state[i+3]^xtime(state[i+3]));
-    printf("2: %x\n",result[i+2]);
     result[i+3]=(state[i]^xtime(state[i]))^state[i+1]^state[i+2]^(xtime(state[i+3]));
-    printf("3: %x\n",result[i+3]);
+    printf("%x %x %x %x\n",result[i],result[i+1],result[i+2],result[i+3]);
   }
   return result;
 }
 
 byte * addRoundKey(byte state[]){
-  byte result[16];
+  byte* result=(byte *)malloc(16*sizeof(byte));
   int i,j=0,k;
   for (i=0;i<16;) {
     result[i]=(((w[j]&0xff000000)^(state[i]<<24))>>24)&0xff; //esto es un byte no un word por eso da cero
@@ -118,7 +115,7 @@ int main (int argc,char *argv[]){
   byte input[4*Nb]={0x32,0x43,0xf6,0xa8,0x88,0x5a,0x30,0x8d,0x31,0x31,0x98,0xa2,0xe0,0x37,0x07,0x34};
   byte key[16]={0x2b,0x7e,0x15,0x16,0x28,0xae,0xd2,0xa6,0xab,0xf7,0x15,0x88,0x09,0xcf,0x4f,0x3c};
   byte state[16]={0x32,0x43,0xf6,0xa8,0x88,0x5a,0x30,0x8d,0x31,0x31,0x98,0xa2,0xe0,0x37,0x07,0x34};
-  byte *pstate,*pstate1,*pstate2,*pstate3;
+  byte *pstate=(byte *)malloc(16*sizeof(byte)),*pstate1=(byte *)malloc(16*sizeof(byte)),*pstate2=(byte *)malloc(16*sizeof(byte)),*pstate3=(byte *)malloc(16*sizeof(byte));
   int i;
 
   keyExpansion(key);
