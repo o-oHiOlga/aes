@@ -3,8 +3,6 @@
 #include <string.h>
 #include "aes.h"
 
-word *w;
-
 word subWord(word temp){
   int r,c,i;
   word postSbox;
@@ -68,16 +66,14 @@ byte * shiftRows(byte state[]){
   return result;
 }
 
-void keyExpansion(byte key[]){
+void keyExpansion(byte* key,word* w){
   word temp;
   int r=0;
   int i=0,j=0;
   while (i<Nk){
     w[i]=joinWord(key[4*i],key[4*i+1],key[4*i+2],key[4*i+3]);
-    //printf("key: %x\n",w[i]);
     i=i+1;
   }
-
   i=Nk;
   while(i<Nb*(Nr+1)){
     temp = w[i-1];
@@ -87,10 +83,11 @@ void keyExpansion(byte key[]){
       temp=subWord(temp);
     }
     w[i]=w[i-Nk]^temp;
-    printf("key1: %x\n",w[i]);
+    //printf("key1: %x\n",w[i]);
     i=i+1;
   }
 }
+
 byte xtime(byte x){
   byte r;
   r=((x << 1) ^ (x & 0x80 ? 0x1b : 0))& 0xff;
@@ -119,21 +116,16 @@ byte * InvMixColumns(byte state[]){
     xt2=xtime(state[i]);
     xt4=xtime(xt2);
     xt8=xtime(xt4);
-    printf("S0,c xt2: %x xt4: %x xt8: %x\n",xt2,xt4,xt8);
     x1t2=xtime(state[i+1]);
     x1t4=xtime(xt2);
     x1t8=xtime(xt4);
-    //printf("S1,c xt2: %x xt4: %x xt8: %x\n",x1t2,x1t4,x1t8);
     x2t2=xtime(state[i+2]);
     x2t4=xtime(xt2);
     x2t8=xtime(xt4);
-    //printf("S2,c xt2: %x xt4: %x xt8: %x\n",x2t2,x2t4,x2t8);
     x3t2=xtime(state[i+3]);
     x3t4=xtime(xt2);
     x3t8=xtime(xt4);
-    //printf("S3,c xt2: %x xt4: %x xt8: %x\n",x3t2,x3t4,x3t8);
     result[i]=(xt8^xt4^xt2)^(x1t8^x1t2^state[i+1])^(x2t8^x2t4^state[i+2])^(x3t8^state[i+3]);
-    printf("result: %x\n",0xc9^0x89^0x09);
     result[i+1]=(xt8^state[i])^(x1t8^x1t4^x1t2)^(x1t8^x1t2^state[i+2])^(x2t8^x2t4^state[i+3]);
     result[i+2]=(xt8^xt4^state[i])^(x1t8^state[i+1])^(x2t8^x2t4^x2t2)^(x3t8^x3t2^state[i+3]);
     result[i+3]=(xt8^xt2^state[i])^(x1t8^x1t4^state[i+1])^(x2t8^state[i+2])^(x3t8^x3t4^x3t2);
@@ -141,13 +133,10 @@ byte * InvMixColumns(byte state[]){
   return result;
 }
 
-byte * addRoundKey(byte state[],int r){
+byte * addRoundKey(byte state[],int r,word* w){
   byte* result=(byte *)calloc(16,sizeof(byte));
   int i,j=r*4,k;
-  printf(".....................................\n" );
-  printf("round: %d \n",r);
   for (i=0;i<16;) {
-    printf("ik_sch: %x\n",w[j]);
     result[i]=(((w[j]&0xff000000)^(state[i]<<24))>>24)&0xff;
     result[i+1]=(((w[j]&0x00ff0000)^(state[i+1]<<16))>>16)&0xff;
     result[i+2]=(((w[j]&0x0000ff00)^(state[i+2]<<8))>>8)&0xff;
@@ -190,82 +179,44 @@ byte * invShiftRows(byte state[]){
   return result;
 }
 
-byte * cipher(byte in[]){
+byte * cipher(byte in[],word* w){
   byte* out=(byte *)calloc(16,sizeof(byte));
   byte* state=(byte *)calloc(16,sizeof(byte));
   int i,k,l;
   for(i=0;i<16;i++)
     state[i]=in[i];
-  state=addRoundKey(state,0);
+  state=addRoundKey(state,0,w);
   for(l=1;l<Nr;l++){
     state=subBytes(state);
     state=shiftRows(state);
     state=mixColumns(state);
-    state=addRoundKey(state,l);
+    state=addRoundKey(state,l,w);
   }
   state=subBytes(state);
   state=shiftRows(state);
-  state=addRoundKey(state,Nr);
+  state=addRoundKey(state,Nr,w);
 
   out=state;
 
   return out;
 }
 
-byte * invCipher(byte in[]){
+byte * invCipher(byte in[],word* w){
   byte* out=(byte *)calloc(16,sizeof(byte));
   byte* state=(byte *)calloc(16,sizeof(byte));
   int i,k,l;
-  for(i=0;i<16;i++){
+  for(i=0;i<16;i++)
       state[i]=in[i];
-      //printf("s: %x\n",state[i]);
-  }
-  printf("iinput: ");
-  for(k=0;k<16;k++)
-    printf("%x",state[k]);
-  printf("\n");
-  state=addRoundKey(state,Nr);
+
+  state=addRoundKey(state,Nr,w);
   for(l=Nr-1;l>=0;l--){
-    printf("istart: ");
-    for(k=0;k<16;k++)
-      printf("%x",state[k]);
-    printf("\n");
-    printf("-----------------\n");
     state=invShiftRows(state);
-    printf("is_row: ");
-    for(k=0;k<16;k++)
-      printf("%x",state[k]);
-    printf("\n");
     state=invSubBytes(state);
-    printf("is_box: ");
-    for(k=0;k<16;k++)
-      printf("%x",state[k]);
-    printf("\n");
-    state=addRoundKey(state,l);
-    printf("ik_add: ");
-    for(k=0;k<16;k++)
-      printf("%x",state[k]);
-    printf("\n");
+    state=addRoundKey(state,l,w);
     state=InvMixColumns(state);
-    printf("mix: ");
-    for(k=0;k<16;k++)
-      printf("%x",state[k]);
-    printf("\n");
   }
-  /*printf("2istart: ");
-  for(k=0;k<16;k++)
-    printf("%x",state[k]);
-  printf("\n");*/
   state=invShiftRows(state);
-  /*printf("2is_row: ");
-  for(k=0;k<16;k++)
-    printf("%x",state[k]);
-  printf("\n");*/
   state=invSubBytes(state);
-  /*printf("2is_box: ");
-  for(k=0;k<16;k++)
-    printf("%x",state[k]);
-  printf("\n");*/
   out=state;
   return out;
 }
@@ -276,23 +227,20 @@ int main (int argc,char *argv[]){
   //byte state[16]={0x32,0x43,0xf6,0xa8,0x88,0x5a,0x30,0x8d,0x31,0x31,0x98,0xa2,0xe0,0x37,0x07,0x34};
   byte input[16]={0x00,0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xaa,0xbb,0xcc,0xdd,0xee,0xff};
   byte key[16]={0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f};
-  byte state[16]={0x00,0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xaa,0xbb,0xcc,0xdd,0xee,0xff};
-  byte prueba[16]={0xe9,0xf7,0x4e,0xec,0x02,0x30,0x20,0xf6,0x1b,0xf2,0xcc,0xf2,0x35,0x3c,0x21,0xc7};
-
   byte *out=(byte *)calloc(16,sizeof(byte));
-  byte *aux=(byte *)calloc(16,sizeof(byte));
+  word* w=(word *)calloc((Nb*(Nr+1)),sizeof(word));
   int k;
-  w=(word *)calloc((Nb*(Nr+1)),sizeof(word));
 
-  keyExpansion(key);
-  //out=cipher(input);
-  /*for(k=0;k<16;k++)
-    printf("cif: %x\n",out[k]);*/
-  //aux=invCipher(out);
-  //printf("xtime:%x\n", 0xc9^0x89^0x09);
-  aux=InvMixColumns(prueba);
+  keyExpansion(key,w);
+  /*for(k=0;k<44;k++)
+    printf("key %x\n",w[k] );*/
+  out=cipher(input,w);
   for(k=0;k<16;k++)
-    printf("aux: %x\n",aux[k]);
+    printf("cif: %x\n",out[k]);
+  //aux=invCipher(out);
+
+
+
 
 
 return 0;

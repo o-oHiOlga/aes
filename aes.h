@@ -7,7 +7,7 @@ FILE *fpe,*fps;
 #define Nb 4  //Este es fijo para el estandar
 #define Nk 4  //128-4, 192-6 y 254-8
 #define rotWord(w) ((w<<8)|(w>>24))&0xffffffff
-#define joinWord(k1,k2,k3,k4) (((k1<<24)&0xffffffff)|((k2<<16)&0xffffffff)|((k3<<8)&0xffffffff)|(k4&0xffffffff))
+#define joinWord(k1,k2,k3,k4) (((k1<<24)&0xffffffff)|((k2<<16)&0xffffffff)|((k3<<8)&0xffffffff)|k4)
 //#define xtime(x) ((x << 1) ^ (x & 0x80 ? 0x1b : 0))& 0xff
 
 typedef unsigned char byte; //Byte = 8-bit
